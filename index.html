@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#1A1A1A"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+  <meta name="apple-mobile-web-app-title" content="Pet Tracker"/>
+  <title>🐾 Pet Tracker</title>
+  <link rel="manifest" href="manifest.json"/>
+  <style>
+    :root{
+      --bg:    #1A1A1A;
+      --bg2:   #282828;
+      --bg3:   #1E1E1E;
+      --y:     #EBAF2D;
+      --yd:    #C49020;
+      --yl:    #F5CA5A;
+      --stone: #7D7D7D;
+      --green: #06C755;
+      --red:   #EF4444;
+      --text:  #F0F0F0;
+      --sub:   #7D7D7D;
+      --border:#2F2F2F;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{
+      font-family:-apple-system,'Noto Sans Thai',sans-serif;
+      background:var(--bg);color:var(--text);
+      min-height:100vh;display:flex;flex-direction:column;
+    }
+
+    /* HEADER */
+    .header{
+      background:var(--bg3);border-bottom:1px solid var(--border);
+      padding:14px 20px;
+      padding-top:calc(14px + env(safe-area-inset-top));
+      display:flex;align-items:center;gap:12px;
+      position:sticky;top:0;z-index:100;
+    }
+    .hdr-av{
+      width:40px;height:40px;border-radius:50%;
+      background:linear-gradient(135deg,var(--y),var(--yd));
+      display:flex;align-items:center;justify-content:center;
+      font-size:22px;box-shadow:0 0 0 2px var(--y);
+    }
+    .hdr-info{flex:1}
+    .hdr-name{font-size:15px;font-weight:700;color:var(--text)}
+    .hdr-status{font-size:11px;color:var(--sub);margin-top:2px;display:flex;align-items:center;gap:5px}
+    .sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .sdot.g{background:var(--green);animation:blink 1.5s infinite}
+    .sdot.y{background:var(--y);animation:blink 1s infinite}
+    .sdot.r{background:var(--red)}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+    /* MESSAGES */
+    .msgs{
+      flex:1;overflow-y:auto;padding:16px;
+      display:flex;flex-direction:column;gap:10px;
+      padding-bottom:20px;
+    }
+    .date-div{text-align:center;font-size:11px;color:var(--sub);margin:4px 0}
+
+    /* Bubble ซ้าย (system) */
+    .msg-l{display:flex;align-items:flex-end;gap:8px}
+    .msg-av{width:32px;height:32px;border-radius:50%;background:var(--y);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .bub-l{background:var(--bg2);border-radius:0 14px 14px 14px;padding:10px 14px;max-width:78%;font-size:13px;line-height:1.7;color:var(--text)}
+    .msg-tl{font-size:9px;color:var(--sub);margin-top:3px;margin-left:40px}
+
+    /* Bubble ขวา (GPS sent) */
+    .msg-r{display:flex;justify-content:flex-end;align-items:flex-end;gap:6px}
+    .msg-read{font-size:9px;color:var(--sub);align-self:flex-end}
+    .bub-r{background:var(--y);border-radius:14px 0 14px 14px;padding:10px 14px;max-width:78%;font-size:13px;line-height:1.6;color:#000;font-weight:600}
+    .msg-tr{font-size:9px;color:var(--sub);margin-top:3px;text-align:right}
+
+    /* Countdown card */
+    .cd-card{background:var(--bg2);border-radius:14px;padding:14px 16px;border:1px solid var(--border)}
+    .cd-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .cd-lbl{font-size:12px;color:var(--sub)}
+    .cd-val{font-size:26px;font-weight:900;color:var(--y);font-variant-numeric:tabular-nums}
+    .prog-bg{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+    .prog-fill{height:100%;background:linear-gradient(90deg,var(--yd),var(--y));border-radius:2px;transition:width 1s linear}
+
+
+
+
+
+    /* ปุ่มใน header */
+    .btn-hdr{
+      flex-shrink:0;
+      padding:10px 14px;background:var(--y);color:#000;
+      border:none;border-radius:12px;font-size:13px;font-weight:900;
+      cursor:pointer;font-family:inherit;white-space:nowrap;
+      display:flex;align-items:center;gap:5px;
+      box-shadow:0 3px 12px rgba(235,175,45,0.3);
+    }
+    .btn-hdr:active{transform:scale(0.97)}
+
+    /* Row inline — countdown + ปุ่ม */
+    .row-inline{
+      display:flex;gap:10px;align-items:stretch;
+      padding:0 4px;
+    }
+
+
+
+    /* TOAST */
+    .toast{
+      position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-8px);
+      background:var(--bg2);color:var(--text);border:1px solid var(--border);
+      padding:10px 20px;border-radius:20px;font-size:13px;
+      z-index:9999;opacity:0;transition:all 0.3s;
+      white-space:nowrap;pointer-events:none;
+      box-shadow:0 4px 16px rgba(0,0,0,0.4);
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hdr-av">🐾</div>
+  <div class="hdr-info">
+    <div class="hdr-name">น้องผัดไท</div>
+    <div class="hdr-status">
+      <div class="sdot y" id="gps-dot"></div>
+      <span id="gps-txt">กำลังรับ GPS...</span>
+    </div>
+  </div>
+  <button class="btn-hdr" onclick="sendNow()">🐾 ส่งพิกัดทันที</button>
+</div>
+
+<!-- MESSAGES -->
+<div class="msgs" id="msgs">
+  <div class="date-div" id="today-date"></div>
+
+  <!-- Countdown -->
+  <div class="msg-l">
+    <div class="msg-av">🐾</div>
+    <div style="flex:1;max-width:85%">
+      <div class="cd-card">
+        <div class="cd-row">
+          <span class="cd-lbl">ส่งพิกัดครั้งถัดไปใน</span>
+          <span class="cd-val" id="countdown">10:00</span>
+        </div>
+        <div class="prog-bg"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="msg-tl">ส่งอัตโนมัติทุก 5 นาที</div>
+
+
+
+  <div id="log-anchor"></div>
+</div>
+
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==========================================
+const PET_NAME  = 'น้องผัดไท';
+const APPS_URL  = 'https://script.google.com/macros/s/AKfycbyljvIqhQ-Y2ANKppSnsGkSK79vus_XQEgj7JyOukUYcTzyWExPbaGnre0cAmYg4Eft/exec';
+const SEND_MIN  = 5;
+// ==========================================
+
+let pos=null, sendCount=0, startTime=Date.now();
+let timerSec=0, totalSec=SEND_MIN*60;
+let timerH=null, shiftH=null;
+
+function nowTime(){
+  const d=new Date();
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+
+window.onload=()=>{
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      // ping SW ทุก 20 วินาที ป้องกัน iOS kill
+      setInterval(() => {
+        if(reg.active) reg.active.postMessage('keepalive');
+      }, 20000);
+    }).catch(()=>{});
+  }
+
+  // วันที่วันนี้
+  const d=new Date();
+  document.getElementById('today-date').textContent=
+    d.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  startGPS();
+  startTimer();
+  window.addEventListener('online', flushQ);
+};
+
+// GPS — ขอ permission ครั้งเดียว บันทึกตลอด
+function startGPS(){
+  if(!navigator.geolocation){ setDot('r','ไม่รองรับ GPS'); return; }
+
+  // เช็คว่าเคยอนุญาตแล้วหรือยัง
+  if(navigator.permissions){
+    navigator.permissions.query({name:'geolocation'}).then(result=>{
+      if(result.state==='granted'){
+        // เคยอนุญาตแล้ว — เริ่ม watch เลย ไม่ pop-up
+        beginWatch();
+      } else if(result.state==='prompt'){
+        // ยังไม่เคย — ขอครั้งเดียว
+        setDot('y','กรุณาอนุญาตตำแหน่ง...');
+        navigator.geolocation.getCurrentPosition(
+          p => { handlePos(p, true); beginWatch(); },
+          onGPSErr,
+          {enableHighAccuracy:true, timeout:20000, maximumAge:0}
+        );
+      } else {
+        // denied
+        setDot('r','ถูกบล็อก — ไปที่ Settings เปิด GPS');
+      }
+      // ฟัง state change ถ้าผู้ใช้เปลี่ยนใจ
+      result.onchange = () => {
+        if(result.state==='granted') beginWatch();
+      };
+    });
+  } else {
+    // browser ไม่รองรับ permissions API (เช่น iOS Safari เก่า)
+    setDot('y','กำลังรับ GPS...');
+    beginWatch();
+  }
+}
+
+function beginWatch(){
+  // watchPosition — ทำงานต่อเนื่องตลอด ไม่ต้องขอซ้ำ
+  navigator.geolocation.watchPosition(
+    p => handlePos(p, false),
+    onGPSErr,
+    {enableHighAccuracy:true, maximumAge:30000, timeout:30000}
+  );
+}
+
+function handlePos(p, isFirst){
+  const{latitude:lat,longitude:lng,accuracy}=p.coords;
+  const firstTime = !pos;
+  pos={lat,lng,accuracy};
+  setDot('g',`GPS ✓  ±${Math.round(accuracy)}m`);
+  // ส่งทันทีที่ได้พิกัดครั้งแรก
+  if(firstTime || isFirst) sendNow();
+}
+
+function onGPSErr(e){
+  if(e.code===1){
+    setDot('r','ถูกบล็อก — ไปที่ Settings เปิด GPS');
+  } else if(e.code===2){
+    setDot('r','ไม่พบสัญญาณ GPS');
+    // ลองใหม่หลัง 10 วินาที
+    setTimeout(startGPS, 10000);
+  } else {
+    setDot('r','GPS timeout — ลองใหม่...');
+    setTimeout(startGPS, 5000);
+  }
+}
+function setDot(c,t){
+  document.getElementById('gps-dot').className='sdot '+c;
+  document.getElementById('gps-txt').textContent=t;
+}
+
+// TIMER
+function startTimer(){
+  timerSec=totalSec; clearInterval(timerH);
+  timerH=setInterval(()=>{
+    timerSec--;
+    if(timerSec<=0){ sendNow(); timerSec=totalSec; }
+    const m=Math.floor(timerSec/60).toString().padStart(2,'0');
+    const s=(timerSec%60).toString().padStart(2,'0');
+    document.getElementById('countdown').textContent=m+':'+s;
+    document.getElementById('prog').style.width=((totalSec-timerSec)/totalSec*100)+'%';
+  },1000);
+}
+
+
+
+// SEND
+function sendNow(){
+  if(!pos){ toast('🐾 ยังไม่ได้รับพิกัด'); return; }
+  const data={
+    action:'save', name:PET_NAME,
+    lat:pos.lat, lng:pos.lng,
+    accuracy:Math.round(pos.accuracy||0),
+    ts:new Date().toISOString()
+  };
+  fetch(APPS_URL+'?'+new URLSearchParams(data),
+    {method:'GET', mode:'no-cors', cache:'no-store'})
+    .then(()=>{
+      sendCount++;
+      const ts=nowTime();
+      appendR(`🐾 ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}<br/><span style="font-size:11px;opacity:0.7">±${Math.round(pos.accuracy)}m · ${ts}</span>`);
+    })
+    .catch(()=>{ queueIt(data); appendL('🐾','เก็บไว้ใน Queue — จะส่งเมื่อ online') });
+}
+
+// QUEUE
+function queueIt(d){
+  let q=JSON.parse(localStorage.getItem('gq')||'[]');
+  q.push(d); if(q.length>200) q=q.slice(-200);
+  localStorage.setItem('gq',JSON.stringify(q));
+}
+function flushQ(){
+  let q=JSON.parse(localStorage.getItem('gq')||'[]'); if(!q.length)return;
+  toast(`🐾 ส่ง ${q.length} รายการที่ค้างไว้...`);
+  localStorage.removeItem('gq'); document.getElementById('st-q').textContent='0';
+  q.forEach(d=>fetch(APPS_URL+'?'+new URLSearchParams(d),
+    {method:'GET',mode:'no-cors',cache:'no-store'}).catch(()=>{}));
+}
+
+// BUBBLES
+function appendL(av,html){
+  const a=document.getElementById('log-anchor');
+  const w=document.createElement('div'); w.className='msg-l';
+  w.innerHTML=`<div class="msg-av">${av}</div><div class="bub-l">${html}</div>`;
+  a.before(w);
+  const t=document.createElement('div'); t.className='msg-tl'; t.textContent=nowTime();
+  a.before(t);
+  scroll();
+}
+function appendR(html){
+  const a=document.getElementById('log-anchor');
+  const w=document.createElement('div'); w.className='msg-r';
+  w.innerHTML=`<span class="msg-read">อ่านแล้ว</span><div class="bub-r">${html}</div>`;
+  a.before(w);
+  const t=document.createElement('div'); t.className='msg-tr'; t.textContent=nowTime();
+  a.before(t);
+  scroll();
+}
+function scroll(){
+  const m=document.getElementById('msgs');
+  setTimeout(()=>m.scrollTo({top:m.scrollHeight,behavior:'smooth'}),100);
+}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
